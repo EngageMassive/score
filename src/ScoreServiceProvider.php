@@ -4,7 +4,7 @@ namespace Takt\Score;
 
 use Illuminate\Support\ServiceProvider;
 
-class TaktCreateBlockServiceProvider extends ServiceProvider
+class ScoreServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap any application services.

@@ -1,6 +1,6 @@
 <?php
 
-namespace Takt\CreateBlock\Console\Commands;
+namespace Takt\Score\Console\Commands;
 
 use Exception;
 use Illuminate\Console\Command;
