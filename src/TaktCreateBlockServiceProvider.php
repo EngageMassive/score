@@ -1,6 +1,6 @@
 <?php
 
-namespace Takt\CreateBlock;
+namespace Takt\Score;
 
 use Illuminate\Support\ServiceProvider;
 

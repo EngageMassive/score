@@ -1,13 +1,13 @@
 {
-  "name": "takt/create-block",
+  "name": "takt/score",
   "type": "package",
   "version": "1.0.0",
-  "description": "Helper for block boilerplate.",
+  "description": "Score framework for Prelude and Acorn-based WordPress themes.",
   "license": "MIT",
   "authors": [
     {
       "name": "Robert Lee",
-      "email": "robert@takt.inc",
+      "email": "robert@takt.com",
       "homepage": "https://github.com/ssang"
     }
   ],
@@ -21,12 +21,12 @@
   },
   "require-dev": {
     "laravel/pint": "^1.15",
-    "roots/acorn": "^4.2"
+    "roots/acorn": "^5.0"
   },
   "extra": {
     "acorn": {
       "providers": [
-        "Takt\\CreateBlock\\TaktCreateBlockServiceProvider"
+        "Takt\\Score\\TaktScoreServiceProvider"
       ]
     }
   }
