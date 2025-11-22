@@ -26,7 +26,7 @@
   "extra": {
     "acorn": {
       "providers": [
-        "Takt\\Score\\ScoreServiceProvider"
+        "Takt\\Score\\Providers\\ScoreServiceProvider"
       ]
     }
   }
