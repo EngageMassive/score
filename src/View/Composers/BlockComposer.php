@@ -2,7 +2,8 @@
 
 namespace Takt\Score\View\Composers;
 
-use Roots\Acorn\View\Composer;
+use Illuminate\View\View;
+use Takt\Score\Block;
 
 class BlockComposer
 {
@@ -18,9 +19,14 @@ class BlockComposer
      *
      * @return void
      */
-    public function compose()
+    public function compose(View $view)
     {
-        dd(1);
-        return [];
+        if (!isset($view->getData()['block'])) {
+            return;
+        }
+
+        $block = new Block($view->getData()['block']);
+
+        $view->with('block', $block);
     }
 }

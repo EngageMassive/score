@@ -2,17 +2,22 @@
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
   "name": "takt/{{DummyBlock}}",
-  "version": "0.1.0",
   "title": "{{DummyBlockHeadline}}",
-  "category": "custom",
-  "icon": "button",
+  "category": "takt-theme",
   "description": "",
-  "keywords": [],
   "supports": {
-    "html": false
+    "html": false,
+    "anchor": true
   },
-  "attributes": {},
-  "parent": ["takt/{{DummyParentBlock}}"],
+  "attributes": {
+    "anchor": {
+      "type": "string"
+    }
+  },
   "textdomain": "takt",
-  "editorScript": "file:./index.js"
+  "example": {
+    "viewportWidth": 1400,
+    "attributes": {}
+  },
+  "parent": ["takt/{{DummyParentBlock}}"]
 }

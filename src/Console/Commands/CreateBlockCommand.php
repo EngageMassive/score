@@ -7,22 +7,27 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Console\PromptsForMissingInput;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
+use RecursiveIteratorIterator;
 use Roots\Acorn\Application;
 
 class CreateBlockCommand extends Command implements PromptsForMissingInput
 {
     protected string $blockName;
 
+    protected string $blockPath;
+
     protected Filesystem $files;
 
     protected string $jsExtension;
+
+    protected bool $blade = false;
 
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'make:block {name : The name of the block} {--js} {--P|parent=} {--anchor}';
+    protected $signature = 'make:block {name : The name of the block} {--js} {--blade} {--P|parent=}';
 
     /**
      * The console command description.
@@ -48,21 +53,24 @@ class CreateBlockCommand extends Command implements PromptsForMissingInput
     {
         if (!$this->isValidAcornVersion()) {
             $this->components->error(
-                "Full-site editing support requires <fg=red>Acorn {$this->version}</> or higher."
+                "Full-site editing support requires <fg=red>Acorn {$this->version}</> or higher.",
             );
 
             return;
         }
 
         $this->files = new Filesystem();
-        $this->blockName = Str::kebab($this->argument('name'));
+        $this->blockName = Str::camel($this->argument('name'));
         $this->jsExtension = $this->option('js') ? 'js' : 'tsx';
+        $this->blade = $this->option('blade');
+        $this->blockPath = $this->getBlockPath();
 
         $this->createDirectory();
         $this->createBlockFile();
         $this->createBlockIndexFile();
         $this->createBlockEditFile();
         $this->createBlockViewFile();
+        $this->createIconFile();
     }
 
     /**
@@ -84,7 +92,7 @@ class CreateBlockCommand extends Command implements PromptsForMissingInput
      */
     public function getBlocksPath()
     {
-        return resource_path() . '/blocks';
+        return base_path('blocks');
     }
 
     /**
@@ -97,20 +105,37 @@ class CreateBlockCommand extends Command implements PromptsForMissingInput
         $path = $this->getBlocksPath() . '/';
 
         if (!empty($this->option('parent'))) {
-            $path = $path . Str::kebab($this->option('parent')) . '/';
+            $path = $this->getParentPath() . '/';
         }
 
-        return $path . $this->blockName;
+        return $path . Str::ucfirst($this->blockName);
     }
 
-    /**
-     * Return the view destination path.
-     *
-     * @return string
-     */
-    public function getViewPath()
+    protected function getParentPath()
     {
-        return resource_path() . '/views/blocks';
+        $blocks = new RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(
+                $this->getBlocksPath(),
+                ($flags = \FilesystemIterator::SKIP_DOTS),
+            ),
+            \RecursiveIteratorIterator::SELF_FIRST,
+        );
+
+        foreach ($blocks as $dir) {
+            if (
+                $dir->isDir() &&
+                Str::of($this->option('parent'))
+                    ->camel()
+                    ->ucfirst()
+                    ->is($dir->getFilename())
+            ) {
+                return $dir->getPathname();
+            }
+        }
+
+        throw new Exception(
+            'Parent ' . $this->option('parent') . ' does not exist.',
+        );
     }
 
     /**
@@ -118,18 +143,32 @@ class CreateBlockCommand extends Command implements PromptsForMissingInput
      */
     protected function createDirectory(): void
     {
-        if ($this->files->exists($this->getBlockPath())) {
+        if ($this->files->exists($this->blockPath)) {
             throw new Exception(
-                'Block directory ' . $this->getBlockPath() . ' already exists.'
+                'Block directory ' . $this->blockPath . ' already exists.',
             );
         }
 
-        $this->files->makeDirectory($this->getBlockPath());
+        $this->files->makeDirectory($this->blockPath);
+    }
+
+    protected function createIconFile(): void
+    {
+        $file = $this->blockPath . '/icon.svg';
+
+        $this->files->put(
+            $file,
+            $this->files->get(__DIR__ . '/stubs/icon.stub'),
+        );
+
+        $this->components->info(
+            "The block icon file has been created at {$file}.",
+        );
     }
 
     protected function createBlockFile(): void
     {
-        $file = $this->getBlockPath() . '/block.json';
+        $file = $this->blockPath . '/block.json';
         $stub = !empty($this->option('parent'))
             ? $this->files->get(__DIR__ . '/stubs/child-block.stub')
             : $this->files->get(__DIR__ . '/stubs/block.stub');
@@ -143,12 +182,12 @@ class CreateBlockCommand extends Command implements PromptsForMissingInput
                     '{{DummyParentBlock}}',
                 ],
                 [
-                    $this->blockName,
+                    Str::kebab($this->blockName),
                     Str::headline($this->blockName),
                     Str::kebab($this->option('parent')) ?? '',
                 ],
-                $stub
-            )
+                $stub,
+            ),
         );
 
         $this->components->info("The block file has been created at {$file}.");
@@ -156,7 +195,7 @@ class CreateBlockCommand extends Command implements PromptsForMissingInput
 
     protected function createBlockIndexFile(): void
     {
-        $file = $this->getBlockPath() . '/index.' . $this->jsExtension;
+        $file = $this->blockPath . '/index.' . $this->jsExtension;
 
         $this->files->put(
             $file,
@@ -171,23 +210,18 @@ class CreateBlockCommand extends Command implements PromptsForMissingInput
                     Str::headline($this->blockName),
                     Str::studly($this->blockName),
                 ],
-                $this->files->get(__DIR__ . '/stubs/index.stub')
-            )
+                $this->files->get(__DIR__ . '/stubs/index.stub'),
+            ),
         );
 
         $this->components->info(
-            "The block index file has been created at {$file}."
+            "The block index file has been created at {$file}.",
         );
     }
 
     protected function createBlockEditFile(): void
     {
-        $file =
-            $this->getBlockPath() .
-            '/' .
-            Str::studly($this->blockName) .
-            '.' .
-            $this->jsExtension;
+        $file = $this->blockPath . '/edit.' . $this->jsExtension;
 
         $this->files->put(
             $file,
@@ -202,22 +236,26 @@ class CreateBlockCommand extends Command implements PromptsForMissingInput
                     Str::headline($this->blockName),
                     Str::studly($this->blockName),
                 ],
-                $this->files->get(__DIR__ . '/stubs/edit.stub')
-            )
+                $this->files->get(__DIR__ . '/stubs/edit.stub'),
+            ),
         );
 
         $this->components->info(
-            "The block edit file has been created at {$file}."
+            "The block edit file has been created at {$file}.",
         );
     }
 
     protected function createBlockViewFile(): void
     {
-        $file = $this->getViewPath() . '/' . $this->blockName . '.blade.php';
+        $file =
+            $this->blockPath .
+            '/view' .
+            ($this->blade ? '.blade' : '') .
+            '.php';
 
         if ($this->files->exists($file)) {
             $this->components->warn(
-                "The block view file already exists at {$file}."
+                "The block view file already exists at {$file}.",
             );
 
             return;
@@ -228,12 +266,12 @@ class CreateBlockCommand extends Command implements PromptsForMissingInput
             str_replace(
                 '{{DummyBlockHeadline}}',
                 Str::headline($this->blockName),
-                $this->files->get(__DIR__ . '/stubs/view.stub')
-            )
+                $this->files->get(__DIR__ . '/stubs/view.stub'),
+            ),
         );
 
         $this->components->info(
-            "The block view file has been created at {$file}."
+            "The block view file has been created at {$file}.",
         );
     }
 

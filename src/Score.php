@@ -3,7 +3,7 @@
 namespace Takt\Score;
 
 use Illuminate\Support\Str;
-use Illuminate\View\View;
+use Illuminate\Support\Facades\View;
 use Roots\Acorn\Application;
 
 class Score
@@ -29,11 +29,15 @@ class Score
     public function init()
     {
         $path = get_stylesheet_directory() . '/blocks';
+
         if (!file_exists($path)) {
             return;
         }
 
-        $blocks = new \FilesystemIterator($path);
+        $blocks = new \RecursiveDirectoryIterator(
+            $path,
+            ($flags = \FilesystemIterator::SKIP_DOTS),
+        );
 
         $this->registerBlocks($blocks);
     }
@@ -53,7 +57,14 @@ class Score
                 continue;
             }
 
-            $this->registerBlocks(new \FilesystemIterator($dir->getPathname()));
+            $childBlocks = new \RecursiveDirectoryIterator(
+                $dir->getPathname(),
+                ($flags = \FilesystemIterator::SKIP_DOTS),
+            );
+
+            if ($childBlocks->hasChildren()) {
+                $this->registerBlocks($childBlocks->getChildren());
+            }
 
             $block = register_block_type($dir->getPathname(), [
                 'render_callback' => function (
@@ -71,6 +82,7 @@ class Score
                             compact('attributes', 'block', 'children'),
                         );
                     } catch (\Exception $e) {
+                        dump($e);
                         if ($block->block_type->category != 'meta') {
                             return '<span style="text-align: center; font-size: 4rem">View does not exist for ' .
                                 $blockName .
