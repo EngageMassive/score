@@ -43,7 +43,7 @@ class Score
     }
 
     /**
-     * Retrieve a random inspirational quote.
+     * Register all the blocks.
      *
      * @return string
      */
@@ -66,15 +66,20 @@ class Score
                 $this->registerBlocks($childBlocks->getChildren());
             }
 
-            $block = register_block_type($dir->getPathname(), [
-                'render_callback' => function (
+            $block = [];
+
+            if (
+                file_exists($dir->getPathname() . '/view.php') ||
+                file_exists($dir->getPathname() . '/view.blade.php')
+            ) {
+                $viewFile = $dir->getBaseName() . '.view';
+
+                $block['render_callback'] = function (
                     $attributes,
                     $children,
                     $block,
-                ) use ($dir) {
+                ) use ($viewFile) {
                     $blockName = Str::after($block->name, '/');
-
-                    $viewFile = $dir->getBaseName() . '.view';
 
                     try {
                         return View::first(
@@ -82,15 +87,16 @@ class Score
                             compact('attributes', 'block', 'children'),
                         );
                     } catch (\Exception $e) {
-                        dump($e);
                         if ($block->block_type->category != 'meta') {
                             return '<span style="text-align: center; font-size: 4rem">View does not exist for ' .
                                 $blockName .
                                 '</span>';
                         }
                     }
-                },
-            ]);
+                };
+            }
+
+            $block = register_block_type($dir->getPathname(), $block);
         }
     }
 }
