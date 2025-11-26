@@ -34,9 +34,12 @@ class Score
             return;
         }
 
-        $blocks = new \RecursiveDirectoryIterator(
-            $path,
-            ($flags = \FilesystemIterator::SKIP_DOTS),
+        $blocks = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(
+                $path,
+                ($flags = \FilesystemIterator::SKIP_DOTS),
+            ),
+            \RecursiveIteratorIterator::CHILD_FIRST,
         );
 
         $this->registerBlocks($blocks);
@@ -55,15 +58,6 @@ class Score
                 !file_exists($dir->getPathname() . '/block.json')
             ) {
                 continue;
-            }
-
-            $childBlocks = new \RecursiveDirectoryIterator(
-                $dir->getPathname(),
-                ($flags = \FilesystemIterator::SKIP_DOTS),
-            );
-
-            if ($childBlocks->hasChildren()) {
-                $this->registerBlocks($childBlocks->getChildren());
             }
 
             $block = [];
