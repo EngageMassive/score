@@ -3,7 +3,7 @@ import { registerBlockType } from '@wordpress/blocks';
 import metadata from './block.json';
 import edit from './edit';
 import { save } from '@taktdev/utilities';
-import Icon from './icon.svg';
+import Icon from './icon.svg?react';
 
 registerBlockType(metadata.name, {
   icon: {
