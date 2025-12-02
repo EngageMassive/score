@@ -3,82 +3,97 @@
 namespace Takt\Score;
 
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\View;
+use Roots\Acorn\Application;
 
-class Block
+class Score
 {
-    protected $anchor;
+    /**
+     * The application instance.
+     *
+     * @var \Roots\Acorn\Application
+     */
+    protected $app;
 
-    protected \WP_Block $block;
-
-    public $attributes = [];
-
-    public function __construct(\WP_Block $block)
+    /**
+     * Create a new Score instance.
+     *
+     * @param  \Roots\Acorn\Application  $app
+     * @return void
+     */
+    public function __construct(Application $app)
     {
-        $this->block = $block;
-        $this->attributes = $block->attributes;
-        $this->setAnchor();
+        $this->app = $app;
     }
 
-    protected function setAnchor()
+    public function init()
     {
-        $this->anchor = $block->anchor ?? null;
+        $path = get_stylesheet_directory() . '/blocks';
 
-        if (empty($anchor)) {
-            $this->anchor =
-                'auto-' . Str::slug($this->block->name) . '-' . uniqid();
+        if (!file_exists($path)) {
+            return;
         }
+
+        $blocks = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(
+                $path,
+                ($flags = \FilesystemIterator::SKIP_DOTS),
+            ),
+            \RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        $this->registerBlocks($blocks);
     }
 
-    public function props($classes = [], $props = [])
+    /**
+     * Register all the blocks.
+     *
+     * @return string
+     */
+    public function registerBlocks($blocks)
     {
-        $args = [];
-
-        // Append ID
-        $args['id'] = esc_attr($this->anchor);
-
-        // Append Aria Labelledby
-        if (
-            !empty($this->attributes['heading']) &&
-            !isset($props['aria-labelledby'])
-        ) {
-            $args['aria-labelledby'] = $this->anchor . '-heading';
-        }
-
-        // Normalize $classes to array with keys
-        if (!is_array($classes)) {
-            $classes = [$classes => true];
-        }
-
-        // Append class list
-        $classList = class_name($classes);
-        if (!empty($classList)) {
-            $args['class'] = esc_attr($classList);
-        }
-
-        // Normalize $props if it's a string
-        if (is_string($props)) {
-            $attrs = [];
-            preg_match_all(
-                '/([a-zA-Z0-9_\-:]+)\s*=\s*"([^"]*)"/',
-                $props,
-                $matches,
-                PREG_SET_ORDER,
-            );
-            foreach ($matches as $match) {
-                $attrs[$match[1]] = $match[2];
+        foreach ($blocks as $dir) {
+            if (
+                !$dir->isDir() ||
+                !file_exists($dir->getPathname() . '/block.json')
+            ) {
+                continue;
             }
-            $props = $attrs;
-        }
 
-        // Append the props
-        if (is_array($props) && !empty($props)) {
-            $args = array_merge($props, $args);
-            $args = array_filter($args, function ($value) {
-                return $value !== false && $value !== null;
-            });
-        }
+            $block = [];
 
-        // Output
-        return get_block_wrapper_attributes($args);
+            if (
+                file_exists($dir->getPathname() . '/view.php') ||
+                file_exists($dir->getPathname() . '/view.blade.php')
+            ) {
+                $viewFile = Str::of($dir->getPathname())
+                    ->after('blocks/')
+                    ->replace('/', '.')
+                    ->append('.view');
+
+                $block['render_callback'] = function (
+                    $attributes,
+                    $children,
+                    $block,
+                ) use ($viewFile) {
+                    $blockName = Str::after($block->name, '/');
+
+                    try {
+                        return View::first(
+                            [$viewFile->toString()],
+                            compact('attributes', 'block', 'children'),
+                        );
+                    } catch (\Exception $e) {
+                        if ($block->block_type->category != 'meta') {
+                            return '<span style="text-align: center; font-size: 4rem">View does not exist for ' .
+                                $blockName .
+                                '</span>';
+                        }
+                    }
+                };
+            }
+
+            $block = register_block_type($dir->getPathname(), $block);
+        }
     }
 }
