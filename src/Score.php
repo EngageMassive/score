@@ -66,7 +66,10 @@ class Score
                 file_exists($dir->getPathname() . '/view.php') ||
                 file_exists($dir->getPathname() . '/view.blade.php')
             ) {
-                $viewFile = $dir->getBaseName() . '.view';
+                $viewFile = Str::of($dir->getPathname())
+                    ->after('blocks/')
+                    ->replace('/', '.')
+                    ->append('.view');
 
                 $block['render_callback'] = function (
                     $attributes,
@@ -77,7 +80,7 @@ class Score
 
                     try {
                         return View::first(
-                            [$viewFile],
+                            [$viewFile->toString()],
                             compact('attributes', 'block', 'children'),
                         );
                     } catch (\Exception $e) {
