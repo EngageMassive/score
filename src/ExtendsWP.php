@@ -54,6 +54,10 @@ trait ExtendsWP
 
     public function getMeta($key, $single = true): mixed
     {
+        if (empty($this->ID)) {
+            return false;
+        }
+
         return get_post_meta($this->ID, $key, $single);
     }
 
