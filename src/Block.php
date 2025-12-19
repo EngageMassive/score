@@ -2,10 +2,13 @@
 
 namespace Takt\Score;
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 class Block
 {
+    use ExtendsWP;
+
     protected $anchor;
 
     protected \WP_Block $block;
@@ -14,22 +17,22 @@ class Block
 
     public function __construct(\WP_Block $block)
     {
-        $this->block = $block;
+        $this->base = $block;
         $this->attributes = $block->attributes;
         $this->setAnchor();
     }
 
-    protected function setAnchor()
+    protected function setAnchor(): void
     {
-        $this->anchor = $block->anchor ?? null;
+        $this->anchor = $this->base->anchor ?? null;
 
-        if (empty($anchor)) {
+        if (empty($this->anchor)) {
             $this->anchor =
-                'auto-' . Str::slug($this->block->name) . '-' . uniqid();
+                'auto-' . Str::slug($this->base->name) . '-' . uniqid();
         }
     }
 
-    public function props($classes = [], $props = [])
+    public function props($classes = [], $props = []): string
     {
         $args = [];
 
@@ -50,7 +53,7 @@ class Block
         }
 
         // Append class list
-        $classList = class_name($classes);
+        $classList = Arr::toCssClasses($classes);
         if (!empty($classList)) {
             $args['class'] = esc_attr($classList);
         }
