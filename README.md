@@ -7,7 +7,7 @@ Use `wp acorn make:block ExampleBlock` to scaffold a new block.
 
 Options:
 
-`--parent=ParentBlock': Specify a parent block to nest the new block within.
+`--parent=ParentBlock`: Specify a parent block to nest the new block within.
 `--blade`: Use Blade templates for the block's markup.
 
 ## Block Model
