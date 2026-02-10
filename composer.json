@@ -1,7 +1,7 @@
 {
   "name": "takt/score",
   "type": "package",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Score framework for Prelude and Acorn-based WordPress themes.",
   "license": "MIT",
   "authors": [
