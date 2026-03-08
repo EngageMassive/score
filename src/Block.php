@@ -24,7 +24,7 @@ class Block
 
     protected function setAnchor(): void
     {
-        $this->anchor = $this->base->anchor ?? null;
+        $this->anchor = $this->attributes['anchor'] ?? null;
 
         if (empty($this->anchor)) {
             $this->anchor =
